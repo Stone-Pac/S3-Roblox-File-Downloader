@@ -1,4 +1,3 @@
-import boto3
 import os
 import requests
 import zipfile
@@ -21,14 +20,14 @@ def download_file(url, key):
 def main():
     bucket_name = input("Enter the name of the S3 bucket: ")
     prefix = input("Enter the prefix of the objects to download: ")
-    s3 = boto3.resource('s3')
-    bucket = s3.Bucket(bucket_name)
-    objects = bucket.objects.filter(Prefix=prefix)
+    url = f"https://s3.amazonaws.com/{bucket_name}?prefix={prefix}"
+    response = requests.get(url)
+    root = ElementTree.fromstring(response.content)
     file_list = []
-    for obj in objects:
-        key = obj.key
+    for child in root.iter('{http://s3.amazonaws.com/doc/2006-03-01/}Contents'):
+        key = child.find('{http://s3.amazonaws.com/doc/2006-03-01/}Key').text
         if key.endswith('.rbxl') or key.endswith('.rbxm') or key.endswith('.rbxlx'):
-            size = obj.size
+            size = child.find('{http://s3.amazonaws.com/doc/2006-03-01/}Size').text
             file_list.append((key, size))
     file_list = sorted(file_list, key=lambda x: x[1], reverse=True)
     zip_filename = f"{prefix}.zip"
